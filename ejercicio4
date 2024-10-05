@@ -1,0 +1,92 @@
+//Migrar el dataset CSV a ARFF
+//El formato ARFF es comúnmente utilizado en software de minería de datos como Weka. 
+//Para migrar un archivo CSV a ARFF, primero cargamos el CSV, luego lo guardamos en formato ARFF. 
+import pandas as pd
+
+# Cargar el archivo CSV (puedes reemplazarlo por tu dataset real)
+df = pd.read_csv('peliculas_marvel.csv')
+
+# Crear el archivo ARFF
+def save_to_arff(df, file_name):
+    with open(file_name, 'w') as f:
+        # Cabecera ARFF
+        f.write('@RELATION marvel_movies\n\n')
+        
+        # Escribir los atributos (columnas del dataset)
+        for col in df.columns:
+            if df[col].dtype == 'object':
+                unique_vals = df[col].unique()
+                f.write(f'@ATTRIBUTE {col} {{{",".join(unique_vals)}}}\n')
+            else:
+                f.write(f'@ATTRIBUTE {col} NUMERIC\n')
+        
+        f.write('\n@DATA\n')
+        
+        # Escribir los datos fila por fila
+        for i, row in df.iterrows():
+            f.write(','.join(map(str, row.values)) + '\n')
+
+# Guardar el dataset en formato ARFF
+save_to_arff(df, 'peliculas_marvel.arff')
+// Aplicar OneHotEncoder y LabelEncoder
+//El OneHotEncoder convierte variables categóricas en columnas binarias (matriz dispersa) donde cada categoría se convierte en una columna distinta. 
+//El LabelEncoder, por otro lado, transforma las categorías en etiquetas numéricas (enteros). Ambos son útiles según el tipo de análisis que realices.
+from sklearn.preprocessing import LabelEncoder
+
+# Crear un LabelEncoder para la columna 'Fase'
+label_encoder = LabelEncoder()
+
+# Transformar la columna 'Fase'
+df['Fase_encoded'] = label_encoder.fit_transform(df['Fase'])
+
+# Mostrar la transformación
+print(df[['Fase', 'Fase_encoded']].head())
+//OneHotEncoder
+//El OneHotEncoder es útil para convertir variables categóricas en múltiples columnas binarias
+from sklearn.preprocessing import OneHotEncoder
+
+# Crear un OneHotEncoder para la columna 'Personajes Principales'
+onehot_encoder = OneHotEncoder(sparse=False)
+
+# Ajustar y transformar la columna 'Personajes Principales' en variables dummy
+onehot_encoded = onehot_encoder.fit_transform(df[['Personajes Principales']])
+
+# Agregar los resultados codificados a un nuevo DataFrame
+onehot_df = pd.DataFrame(onehot_encoded, columns=onehot_encoder.get_feature_names_out(['Personajes Principales']))
+
+# Combinar el resultado con el dataset original
+df = pd.concat([df, onehot_df], axis=1)
+
+print(df.head())
+//Discretización
+from sklearn.preprocessing import KBinsDiscretizer
+
+# Discretizar la columna 'Recaudación Mundial (USD)' en 4 categorías
+discretizer = KBinsDiscretizer(n_bins=4, encode='ordinal', strategy='uniform')
+
+# Aplicar la discretización
+df['Recaudacion_discretizada'] = discretizer.fit_transform(df[['Recaudación Mundial (USD)']])
+
+print(df[['Recaudación Mundial (USD)', 'Recaudacion_discretizada']].head())
+//Normalización
+from sklearn.preprocessing import MinMaxScaler
+
+# Crear un MinMaxScaler para normalizar la columna 'Presupuesto'
+scaler = MinMaxScaler()
+
+# Aplicar la normalización a la columna 'Presupuesto'
+df['Presupuesto_normalizado'] = scaler.fit_transform(df[['Presupuesto (USD)']])
+
+print(df[['Presupuesto (USD)', 'Presupuesto_normalizado']].head())
+//Normalización Z-score (Estandarización)
+from sklearn.preprocessing import StandardScaler
+
+# Crear un StandardScaler para estandarizar la columna 'Duración'
+scaler = StandardScaler()
+
+# Aplicar la estandarización
+df['Duracion_estandarizada'] = scaler.fit_transform(df[['Duración (min)']])
+
+print(df[['Duración (min)', 'Duracion_estandarizada']].head())
+
+
